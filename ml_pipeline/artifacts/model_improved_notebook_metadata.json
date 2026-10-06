@@ -1,0 +1,22 @@
+{
+  "model_name": "Compact 8 Inputs",
+  "model_version": "notebook_v3",
+  "target": "DEFAULT_NEXT_MONTH",
+  "input_features": [
+    "LIMIT_BAL",
+    "AGE",
+    "PAY_0",
+    "PAY_2",
+    "BILL_AMT1",
+    "BILL_AMT2",
+    "PAY_AMT1",
+    "PAY_AMT2"
+  ],
+  "input_count": 8,
+  "classification_threshold": 0.49,
+  "risk_thresholds": {
+    "low_max": 0.2,
+    "high_min": 0.4
+  },
+  "note": "Educational prototype only; not a lending or credit decision."
+}

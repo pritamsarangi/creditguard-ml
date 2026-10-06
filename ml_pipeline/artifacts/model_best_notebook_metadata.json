@@ -1,0 +1,17 @@
+{
+  "model_name": "Gradient Boosting",
+  "model_version": "notebook_v2",
+  "target": "DEFAULT_NEXT_MONTH",
+  "selection_metric": "ROC_AUC",
+  "accuracy": 0.8178333333333333,
+  "precision": 0.6647887323943662,
+  "recall": 0.3556895252449133,
+  "f1": 0.4634266077565047,
+  "roc_auc": 0.7815595886581528,
+  "pr_auc": 0.5576488782457222,
+  "risk_thresholds": {
+    "low_max": 0.2,
+    "high_min": 0.4
+  },
+  "note": "Educational prototype only; not a lending or credit decision."
+}
