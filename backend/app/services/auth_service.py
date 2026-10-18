@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from ..core.config import settings
@@ -39,6 +39,27 @@ def request_email_otp(
     """
     email = normalize_email(email)
     now = utc_now()
+    hour_ago = now - timedelta(hour=1)
+
+    email_requests = db.scalar(
+        select(func.count(EmailOTP.id)).where(
+            EmailOTP.email == email,
+            EmailOTP.created_at >= hour_ago,
+        )
+    ) or 0
+    if email_requests >= 3:
+        raise OtpCooldownError(
+            "Too many verification requests. Please try again later."
+        )
+    total_requests = db.scalar(
+        select(func.count(EmailOTP.id)).where(
+            EmailOTP.created_at >= hour_ago
+        )
+    ) or 0
+    if total_requests >= 30:
+        raise OtpCooldownError(
+            "Verification service is busy. Please try again later."
+        )
 
     latest_otp = db.scalar(
         select(EmailOTP)
