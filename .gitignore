@@ -30,6 +30,8 @@ data/processed/*
 artifacts/*.joblib
 artifacts/*.pkl
 artifacts/*.pickle
+# Include the CreditGuard production model
+!artifacts/model_stronger_notebook.joblib
 ml_pipeline/artifacts/*.joblib
 ml_pipeline/artifacts/*.pkl
 ml_pipeline/artifacts/*.pickle

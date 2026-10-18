@@ -58,5 +58,20 @@ class Settings:
 
     cors_origins: str = os.getenv("CORS_ORIGINS", "*")
 
+    #Authentication
+    otp_secret_key: str = os.getenv("OTP_SECRET_KEY", "")
+    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "")
+
+    otp_expiry_minutes: int = 5
+    otp_max_attempts:int = 7
+    otp_resend_cooldown_seconds: int = 60
+
+    jwt_access_token_minutes: int = 15
+    jwt_refresh_token_days: int = 7
+
+    #Transactional email
+    brevo_api_key: str = os.getenv("BREVO_API_KEY", "")
+    brevo_sender_email: str = os.getenv("BREVO_SENDER_EMAIL", "")
+
 
 settings = Settings()

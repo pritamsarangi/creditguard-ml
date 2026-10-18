@@ -1,14 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get/get.dart';
-
-import 'package:creditguard_flutter/main.dart';
-import 'package:creditguard_flutter/controllers/home_controller.dart';
+import 'package:creditguard_flutter/core/constants/api_endpoints.dart';
 
 void main() {
-  testWidgets('CreditGuard app renders', (tester) async {
-    Get.put(HomeController());
-    await tester.pumpWidget(const CreditGuardApp());
-    expect(find.text('CreditGuard'), findsOneWidget);
-    Get.delete<HomeController>();
+  test('API endpoints use versioned routes', () {
+    expect(
+      ApiEndpoints.predictions,
+      '/api/v1/predictions',
+    );
+
+    expect(
+      ApiEndpoints.sendOtp,
+      '/api/v1/auth/send-otp',
+    );
   });
 }

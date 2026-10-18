@@ -9,8 +9,7 @@ from . import models  # noqa: F401 - registers ORM models
 from .api.routes import router
 from .core.config import settings
 from .db import Base, engine
-
-
+from .api.auth_routes import router as auth_router
 app = FastAPI(
     title="CreditGuard API",
     description="Educational credit default risk prediction API.",
@@ -29,6 +28,7 @@ app.add_middleware(
 Path(settings.model_path).parent.mkdir(parents=True, exist_ok=True)
 Base.metadata.create_all(bind=engine)
 app.include_router(router)
+app.include_router(auth_router)
 
 
 @app.get("/")
