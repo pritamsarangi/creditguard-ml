@@ -67,6 +67,8 @@ flutter_app/ios/Flutter/ephemeral/
 flutter_app/ios/Flutter/Generated.xcconfig
 flutter_app/ios/Flutter/flutter_export_environment.sh
 flutter_app/macos/Flutter/ephemeral/
+/key.properties
+/app/*.jks
 
 # Keep pubspec.lock for application reproducibility
 # flutter_app/pubspec.lock is intentionally tracked
