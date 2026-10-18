@@ -1,82 +1,31 @@
 # CreditGuard
 
-**CreditGuard** is an educational end-to-end machine-learning project that estimates credit-card default risk and exposes the model through a FastAPI backend, Microsoft SQL Server persistence, and a Flutter mobile application.
+**CreditGuard** is an educational credit-card default-risk assessment application built with a compact eight-input XGBoost model, a FastAPI API, and a Flutter client for Web and Android. Users authenticate with an email one-time password (OTP), submit an assessment, view the estimated risk and contextual factors, and revisit their own prediction history.
 
-> **Educational prototype only.** CreditGuard is not a lending, underwriting, pricing, eligibility, approval, or denial system and must not be used for real-world credit decisions.
+> **Educational demonstration only.** CreditGuard must not be used for lending, underwriting, pricing, eligibility, approval, denial, or other real-world credit decisions. Model scores are not calibrated real-world probabilities, and contextual factors are not causal explanations.
 
-## Current stack
+## Live demo
 
-- **ML:** Python, pandas, scikit-learn, XGBoost
-- **Backend:** FastAPI + Pydantic
-- **Database:** Microsoft SQL Server Express via SQLAlchemy + pyodbc
-- **Mobile:** Flutter + GetX + `http`
-- **Model persistence:** `joblib`
+| Component | URL |
+| --- | --- |
+| Flutter Web | [Open CreditGuard](https://creditguard-web.pritamsarangi70.workers.dev) |
+| FastAPI documentation | [Swagger UI](https://creditguard-api-0izj.onrender.com/docs) |
+| API health | [Health endpoint](https://creditguard-api-0izj.onrender.com/api/v1/health) |
 
-## Dataset
+The API runs on a Render free instance, which may sleep when idle. The first request after inactivity can be slow enough to time out; retrying after the service wakes may succeed. Avoid repeatedly requesting OTP emails.
 
-The project uses the **UCI Default of Credit Card Clients** dataset.
+**Deployment status:** The hosted Flutter Web flow and a signed Android release APK were tested with email OTP, prediction submission, history, and logout. These are functional smoke tests, **not** a security audit or load test.
 
-- 30,000 rows
-- Binary target: default payment in the following month
-- Original dataset: 23 explanatory variables
+## Technology stack
 
-Source: UCI Machine Learning Repository, dataset 350.
+- **Machine learning:** Python, pandas, scikit-learn, XGBoost; serialized pipeline via `joblib`
+- **Backend:** FastAPI, Pydantic, SQLAlchemy, JWT access tokens and rotating refresh sessions
+- **Database:** Neon PostgreSQL in deployment; Microsoft SQL Server Express available for local development
+- **Email:** Brevo transactional email for OTP delivery
+- **Frontend:** Flutter (Android + Web), `flutter_bloc`, `go_router`, Dio
+- **Hosting:** Render for FastAPI and Cloudflare Workers static assets for Flutter Web
 
-## ML workflow
-
-```text
-UCI dataset
-→ cleaning / EDA
-→ train / validation / test split
-→ candidate model comparison
-→ threshold evaluation
-→ 23 vs 10 vs 8 input comparison
-→ compact product model
-→ saved pipeline
-→ FastAPI inference
-```
-
-The notebook compares multiple classifiers, including classical scikit-learn
-models and stronger ensemble/boosting approaches.
-
-### Selected product candidate
-
-The current application uses:
-
-```text
-Algorithm                XGBoost
-Product input count      8
-Classification threshold 0.25
-ROC-AUC                  ~0.768
-Recall                   ~0.581
-F1                       ~0.535
-Accuracy                 ~77.7%
-```
-
-The 8-input model was selected because it retained performance reasonably close
-to the full 23-input model while making the mobile assessment substantially
-simpler.
-
-### Model inputs
-
-The model receives:
-
-```text
-LIMIT_BAL
-AGE
-PAY_0
-PAY_2
-BILL_AMT1
-BILL_AMT2
-PAY_AMT1
-PAY_AMT2
-```
-
-The Flutter application does not expose these raw dataset column names. It uses
-user-friendly labels such as credit limit, age, recent repayment status, bill
-amounts, and recent payment amounts.
-
-# Architecture
+## Architecture
 
 ```text
                     +---------------------------+
@@ -176,145 +125,99 @@ amounts, and recent payment amounts.
                          | - Contextual Factors  |
                          | - Disclaimer          |
                          +-----------------------+
-```                         
+```
 
 See [`architecture.md`](architecture.md) for more detail.
 
-## Repository structure
+## Dataset and ML evaluation
+
+The model was developed using the [UCI Default of Credit Card Clients dataset](https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients), containing 30,000 observations, 23 original explanatory variables, and a binary target indicating default payment in the following month.
+
+The notebook workflow covers data cleaning and exploratory analysis, train/validation/test splitting, candidate-model comparisons, threshold evaluation, and comparison of 23-, 10-, and 8-feature configurations. The chosen application model uses eight inputs to make the assessment form simpler.
+
+| Property | Value |
+| --- | --- |
+| Model | XGBoost, compact eight-input version |
+| Model version | `notebook_v4` |
+| Default classification threshold | `0.25` |
+| ROC-AUC (reported notebook evaluation) | approximately `0.768` |
+| Recall (reported notebook evaluation) | approximately `0.581` |
+| F1 (reported notebook evaluation) | approximately `0.535` |
+| Accuracy (reported notebook evaluation) | approximately `77.7%` |
+
+These figures are historical notebook evaluation results, not live production metrics. The `/api/v1/model/info` endpoint currently returns an empty `selected_metrics` object.
+
+### Inputs and risk bands
+
+| Dataset feature | Flutter form field |
+| --- | --- |
+| `LIMIT_BAL` | Credit limit |
+| `AGE` | Age |
+| `PAY_0` | Most recent repayment status |
+| `PAY_2` | Previous repayment status |
+| `BILL_AMT1` | Current bill amount |
+| `BILL_AMT2` | Previous bill amount |
+| `PAY_AMT1` | Latest payment amount |
+| `PAY_AMT2` | Previous payment amount |
+
+Repayment status is selected from readable dropdown options (for example, **Paid as agreed**, **Current / no recorded delay**, **1 month late**, **2 months late**), not by manually entering dataset codes.
+
+The application currently categorizes model output into **Low** (below 0.20), **Medium** (0.20 to below 0.40), and **High** (0.40 or greater) risk bands. The separate `0.25` classification threshold determines the binary predicted-default output. Neither threshold should be interpreted as a validated real-world policy rule.
+
+## Repository layout
 
 ```text
-creditguard/
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── core/
-│   │   ├── ml/
-│   │   ├── db.py
-│   │   ├── main.py
-│   │   ├── models.py
-│   │   └── schemas.py
-│   └── requirements.txt
-├── ml_pipeline/
-│   ├── CreditGuard_ML_Stronger_Models.ipynb
-│   ├── feature_engineering.py
-│   └── runtime.py
-├── flutter_app/
-│   ├── lib/
-│   ├── android/
-│   └── pubspec.yaml
-├── artifacts/
-├── data/
-├── reports/
-├── scripts/
-├── tests/
-├── sql_schema.sql
-├── architecture.md
-├── .env.example
-└── README.md
+backend/       FastAPI routes, services, database models and requirements
+flutter_app/   Flutter Web and Android client
+ml_pipeline/   Notebooks and model runtime
+artifacts/     Selected serialized model and metadata
+scripts/       Development utilities
+tests/         Repository tests (where available)
+.env.example   Configuration template
+architecture.md
+README.md
 ```
 
-Generated datasets, trained binary model files, build outputs, virtual
-environments, local IDE files, and secrets are intentionally excluded from Git.
-
-## Backend setup
-
-### 1. Create a virtual environment
+## Local backend setup (Windows / PowerShell)
 
 From the repository root:
 
 ```powershell
 python -m venv ..\.venv
 ..\.venv\Scripts\Activate.ps1
-```
-
-Or use any virtual-environment location you prefer.
-
-### 2. Install dependencies
-
-```powershell
 pip install -r backend\requirements.txt
-```
-
-The saved model was validated using `scikit-learn==1.7.2`. Loading a joblib
-artifact with a different scikit-learn version can produce compatibility
-warnings or invalid behavior.
-
-### 3. Configure environment
-
-Copy:
-
-```powershell
 Copy-Item .env.example .env
 ```
 
-Edit `.env` for your local SQL Server instance:
+Edit the private `.env` file. For SQL Server Express, configure `DB_SERVER`, `DB_NAME` and `DB_DRIVER`, then create the database schema using the repository's SQL setup instructions. For PostgreSQL, set `DATABASE_URL` to a SQLAlchemy-compatible URL beginning with `postgresql+psycopg://` and install the PostgreSQL driver if it is not included in your local environment.
 
-```env
-DB_SERVER=localhost\SQLEXPRESS
-DB_NAME=CreditGuard
-DB_DRIVER=ODBC Driver 18 for SQL Server
-```
+Configure `OTP_SECRET_KEY`, `JWT_SECRET_KEY`, `BREVO_API_KEY`, and `BREVO_SENDER_EMAIL` to use email authentication. **Never commit real credentials.**
 
-`.env` is ignored by Git.
-
-### 4. Create the database
-
-Run `sql_schema.sql` in SQL Server Management Studio, then verify connectivity:
+Start the API from the repository root:
 
 ```powershell
-python scripts\test_sqlserver.py
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 ```
 
-### 5. Prepare the model artifact
+Open `http://127.0.0.1:8000/docs`. For Android devices on the same network, bind the API to `0.0.0.0` instead and use the computer's LAN address.
 
-Binary model artifacts are intentionally excluded from Git.
+The selected model is committed at `artifacts/model_stronger_notebook.joblib`, with accompanying metadata. You do **not** need to retrain the model to run the existing application. The saved pipeline was validated with `scikit-learn==1.7.2`; dependency compatibility matters when loading Python model artifacts.
 
-Run the notebook:
+## API overview
 
-```text
-ml_pipeline/CreditGuard_ML_Stronger_Models.ipynb
-```
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/health` | API and model readiness |
+| `GET` | `/api/v1/model/info` | Model metadata |
+| `POST` | `/api/v1/auth/send-otp` | Request email OTP |
+| `POST` | `/api/v1/auth/verify-otp` | Verify OTP and issue session tokens |
+| `POST` | `/api/v1/auth/refresh` | Rotate session tokens |
+| `POST` | `/api/v1/auth/logout` | Revoke session |
+| `GET` | `/api/v1/auth/me` | Current user |
+| `POST` | `/api/v1/predictions` | Authenticated risk assessment |
+| `GET` | `/api/v1/predictions?limit=20` | Authenticated user prediction history |
 
-The selected artifact/metadata should be placed at:
-
-```text
-artifacts/model_stronger_notebook.joblib
-artifacts/model_stronger_notebook_metadata.json
-```
-
-### 6. Start FastAPI
-
-```powershell
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
-```
-
-Swagger:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-## API
-
-### Health
-
-```http
-GET /api/v1/health
-```
-
-### Model information
-
-```http
-GET /api/v1/model/info
-```
-
-### Create prediction
-
-```http
-POST /api/v1/predictions
-```
-
-Example:
+Example assessment payload (requires authentication):
 
 ```json
 {
@@ -329,151 +232,76 @@ Example:
 }
 ```
 
-Example response shape:
-
-```json
-{
-  "id": 8,
-  "created_at": "2026-10-04T14:03:03",
-  "risk": {
-    "level": "low",
-    "label": "Low Risk",
-    "estimated_probability": 0.104043,
-    "percentage": 10
-  },
-  "summary": {
-    "title": "Your estimated default risk is low",
-    "message": "The model produced an estimated default probability of about 10% based on the information you provided."
-  },
-  "factors": [
-    {
-      "title": "Recent repayment history",
-      "status": "positive",
-      "message": "Your most recent repayment status shows no positive delay code."
-    }
-  ],
-  "explanation_note": "Contextual signals are not causal model explanations.",
-  "disclaimer": "Educational prototype only; this estimate is not a lending or credit decision."
-}
-```
-
-### Prediction history
-
-```http
-GET /api/v1/predictions?limit=20
-```
-
-Authentication and user-specific history are planned next.
-
-## Flutter setup
+## Flutter: run and build
 
 From `flutter_app`:
 
 ```powershell
 flutter pub get
-flutter devices
+flutter analyze
+flutter test
 ```
 
-For the Android emulator:
+Run against the hosted HTTPS API:
 
 ```powershell
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+flutter run -d chrome --dart-define=APP_ENV=prod --dart-define=API_BASE_URL=https://creditguard-api-0izj.onrender.com
 ```
 
-For a physical Android device on the same Wi-Fi network, use the development
-machine's current LAN IPv4 address:
+For Android, replace `chrome` with the device ID from `flutter devices`.
+
+Create a production Web bundle:
 
 ```powershell
-flutter run -d DEVICE_ID --dart-define=API_BASE_URL=http://YOUR_PC_IP:8000
+flutter build web --release --dart-define=APP_ENV=prod --dart-define=API_BASE_URL=https://creditguard-api-0izj.onrender.com
 ```
 
-The FastAPI server must be bound to `0.0.0.0` for LAN access.
+Output: `flutter_app/build/web/`. The current Cloudflare deployment was uploaded as static assets to a Cloudflare Worker. Manual static uploads do not automatically update when GitHub changes; rebuild and upload the new assets after frontend changes.
 
-## Current user flow
-
-```text
-Open app
-→ enter eight assessment inputs
-→ submit assessment
-→ FastAPI runs XGBoost inference
-→ prediction stored in SQL Server
-→ dedicated result screen
-→ risk level + estimated probability
-→ summary + contextual factors + disclaimer
-→ prediction history
-```
-
-## Evaluation notes
-
-Accuracy is not treated as the only metric. CreditGuard also compares:
-
-- Precision
-- Recall
-- F1
-- ROC-AUC
-- PR-AUC
-- Confusion matrix
-
-The default classification threshold was changed from `0.50` to `0.25` after
-validation because the project values detecting more potential defaults over
-maximizing raw accuracy alone.
-
-## Explainability limitation
-
-The current API factors are simple contextual signals derived from the supplied
-inputs. They are useful for UI explanation but are **not** causal explanations
-of the XGBoost prediction.
-
-A future version can add SHAP-based local feature attribution.
-
-## Probability limitation
-
-The current percentage is the model's estimated probability. Probability
-calibration is still planned and should be evaluated before interpreting the
-number as a strongly calibrated real-world probability.
-
-## Tests
+Create a signed Android APK after configuring **private** Android release signing credentials:
 
 ```powershell
-pytest -q
+flutter build apk --release --dart-define=APP_ENV=prod --dart-define=API_BASE_URL=https://creditguard-api-0izj.onrender.com
 ```
 
-## Roadmap
+Output: `flutter_app/build/app/outputs/flutter-apk/app-release.apk`. The release keystore and `android/key.properties` must remain outside version control. Save an independent backup of the keystore and passwords; future updates must use the same signing identity. The current Android application ID is `com.example.creditguard_flutter`, suitable for a project demo but not a finalized Play Store identity.
 
-- [x] Dataset / EDA
-- [x] Candidate model comparison
-- [x] Compact feature evaluation
-- [x] 8-input XGBoost integration
-- [x] FastAPI inference
-- [x] SQL Server persistence
-- [x] Flutter assessment form
-- [x] Dedicated result screen
-- [x] Prediction history
-- [ ] Probability calibration
-- [ ] Authentication / JWT
-- [ ] User-specific prediction history
-- [ ] SHAP explanations
-- [ ] Backend/API tests for the new compact contract
-- [ ] Screenshots and demo GIF
-- [ ] CI
-- [ ] Deployment
+See [Flutter client instructions](flutter_app/README.md) for details.
 
-## Security / repository hygiene
+## Deployment configuration
 
-Do not commit:
+The Render Web Service uses the repository root, installs `backend/requirements-prod.txt`, and starts:
 
-- `.env`
-- database credentials
-- local SQL Server machine names
-- Android `local.properties`
-- Python virtual environments
-- Flutter build output
-- downloaded datasets
-- trained binary model artifacts
+```bash
+uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+```
 
-Use `.env.example` for documented configuration.
+Deployment environment variables include `DATABASE_URL`, `OTP_SECRET_KEY`, `JWT_SECRET_KEY`, `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, and `CORS_ORIGINS`. The browser origin must be explicitly allowed:
 
-## License / disclaimer
+```dotenv
+CORS_ORIGINS=https://creditguard-web.pritamsarangi70.workers.dev
+```
 
-This repository is an educational portfolio project built on a public research
-dataset. It is not designed or validated for real credit decision-making.
+This is a public frontend and API URL; **do not** put backend secrets in the Flutter build, source control, or public environment variables.
+
+## Security, operations and limitations
+
+- OTP challenges expire after 5 minutes, limit verification attempts, and have a 60-second per-email resend cooldown. The latest backend change adds basic per-email and global hourly request caps. The rejection behavior has not yet been independently exercised after deployment; limits based on counting database records are not concurrency-safe and do not provide per-IP or distributed abuse protection.
+- The API is publicly reachable. The current OTP limits are suitable only as basic controls for a controlled demo; they do not establish production-grade resistance to automated abuse or email flooding.
+- Browser refresh tokens are held in JavaScript-accessible memory rather than persistent browser storage. This limits persistence across reloads but does **not** provide HttpOnly-cookie protection against XSS. Public production authentication warrants further review, including the expired-session redirect behavior.
+- The signed Android APK has passed a device functional smoke test; the release signature has not been independently audited in this document.
+- Render's free instance may be slow on the first request after idle; API timeouts are a known user-experience limitation.
+- The eight-input XGBoost score is **not probability-calibrated**. The UI's contextual factors summarize input patterns and are not SHAP values, causal effects, or guaranteed explanations of a specific prediction.
+- No independent penetration test, exhaustive backend automated test suite, or accessibility audit is claimed.
+
+## Validation performed
+
+- Flutter analysis and automated tests were passing during development (23 tests reported in the project workflow).
+- Local Chrome and Android debug workflows were exercised.
+- Hosted Flutter Web: OTP login, prediction, history, logout, and re-login paths were smoke-tested.
+- Signed Android release APK: installed and tested on a physical OnePlus device against the hosted API, without requiring USB during application use.
+- Render deployment and model-readiness endpoints were confirmed operational. The latest OTP-limiting deployment was reported **Live**.
+
+## License and attribution
+
+This is an educational portfolio project based on the UCI Default of Credit Card Clients research dataset. Dataset licensing and citation requirements should be reviewed before redistributing the dataset. No software license is granted by this README; consult any repository license file for applicable terms.
