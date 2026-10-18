@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..db import get_db
-from ..models import Prediction
+from ..models import Prediction, User
 from ..schemas import (
     CreditInput,
     ModelInfo,
@@ -14,6 +14,7 @@ from ..schemas import (
     PredictionResponse,
 )
 from ..ml.service import model_runtime
+from .auth_dependencies import get_current_user
 
 
 router = APIRouter(
@@ -98,6 +99,7 @@ def model_info() -> ModelInfo:
 )
 def create_prediction(
     payload: CreditInput,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> PredictionResponse:
 
@@ -115,6 +117,7 @@ def create_prediction(
     )
 
     row = Prediction(
+        user_id=current_user.id, 
         model_name=result["model_name"],
         model_version=result["model_version"],
         default_probability=result[
@@ -151,6 +154,7 @@ def create_prediction(
     response_model=list[PredictionHistoryItem],
 )
 def list_predictions(
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     limit: int = Query(
         20,
@@ -161,8 +165,10 @@ def list_predictions(
 
     rows = db.scalars(
         select(Prediction)
+        .where(Prediction.user_id == current_user.id)
         .order_by(
-            Prediction.created_at.desc()
+            Prediction.created_at.desc(),
+            Prediction.id.desc(),
         )
         .limit(limit)
     ).all()

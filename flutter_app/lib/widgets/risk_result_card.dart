@@ -74,10 +74,7 @@ class RiskResultCard extends StatelessWidget {
                 const SizedBox(height: 14),
                 Text(
                   prediction.risk.label,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: color,
                       ),
@@ -85,22 +82,14 @@ class RiskResultCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '${prediction.risk.percentage}%',
-                  style: Theme.of(context)
-                      .textTheme
-                      .displaySmall
-                      ?.copyWith(
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                 ),
                 Text(
                   'estimated default probability',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurfaceVariant,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const SizedBox(height: 18),
@@ -108,8 +97,7 @@ class RiskResultCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                   child: LinearProgressIndicator(
                     minHeight: 9,
-                    value: prediction.risk.estimatedProbability
-                        .clamp(0.0, 1.0),
+                    value: prediction.risk.estimatedProbability.clamp(0.0, 1.0),
                   ),
                 ),
               ],
@@ -125,10 +113,7 @@ class RiskResultCard extends StatelessWidget {
               children: [
                 Text(
                   prediction.summary.title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -148,10 +133,7 @@ class RiskResultCard extends StatelessWidget {
                 children: [
                   Text(
                     'What may be influencing this assessment?',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                   ),
@@ -177,8 +159,7 @@ class RiskResultCard extends StatelessWidget {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   factor.title,

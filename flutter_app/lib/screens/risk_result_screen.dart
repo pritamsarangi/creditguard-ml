@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../models/prediction_response.dart';
 import '../widgets/risk_result_card.dart';
+import 'package:go_router/go_router.dart';
+
+import '../app/app_router.dart';
 
 class RiskResultScreen extends StatelessWidget {
   final PredictionResponse prediction;
@@ -51,7 +53,13 @@ class RiskResultScreen extends StatelessWidget {
           SizedBox(
             height: 52,
             child: FilledButton(
-              onPressed: Get.back,
+              onPressed: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go(AppRoutes.home);
+                }
+              },
               child: const Text('Done'),
             ),
           ),
