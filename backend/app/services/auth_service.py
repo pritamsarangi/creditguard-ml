@@ -39,7 +39,7 @@ def request_email_otp(
     """
     email = normalize_email(email)
     now = utc_now()
-    hour_ago = now - timedelta(hour=1)
+    hour_ago = now - timedelta(hours=1)
 
     email_requests = db.scalar(
         select(func.count(EmailOTP.id)).where(
